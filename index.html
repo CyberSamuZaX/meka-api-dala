@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <title>සිංහල AI සංවාද Bot</title>
+  <style>
+    body {
+      font-family: 'Noto Sans Sinhala', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      height: 400px;
+    }
+
+    .chat-msg {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 80%;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #d1e7dd;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #f8d7da;
+    }
+
+    .input-area {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      padding: 15px;
+      font-size: 16px;
+    }
+
+    button {
+      border: none;
+      background: #0d6efd;
+      color: white;
+      padding: 0 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-box" id="chatBox">
+      <!-- Messages will appear here -->
+    </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="ඔබේ පණිවිඩය ලියන්න..." />
+      <button onclick="sendMessage()">යවන්න</button>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chatBox");
+
+    // Load chat history from localStorage
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+      history.forEach(msg => {
+        const div = document.createElement("div");
+        div.className = `chat-msg ${msg.type}`;
+        div.textContent = msg.text;
+        chatBox.appendChild(div);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Save new message to history
+    function saveToHistory(type, text) {
+      const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+      history.push({ type, text });
+      localStorage.setItem("chatHistory", JSON.stringify(history));
+    }
+
+    // Send message to OpenAI
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "chat-msg user";
+      userMsg.textContent = message;
+      chatBox.appendChild(userMsg);
+      saveToHistory("user", message);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = "";
+
+      try {
+        const response = await fetch(`https://vapis.my.id/api/openai?q=${encodeURIComponent(message)}`);
+        const data = await response.json();
+        const reply = data.result || "පිළිතුරක් ලැබී නැහැ.";
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "chat-msg bot";
+        botMsg.textContent = reply;
+        chatBox.appendChild(botMsg);
+        saveToHistory("bot", reply);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+      } catch (error) {
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "chat-msg bot";
+        errorMsg.textContent = "පිළිතුර ලබාගැනීමේදී දෝෂයක් ඇතිවිය.";
+        chatBox.appendChild(errorMsg);
+        saveToHistory("bot", "පිළිතුර ලබාගැනීමේදී දෝෂයක් ඇතිවිය.");
+      }
+    }
+
+    // Load old messages when page loads
+    window.onload = loadHistory;
+  </script>
+</body>
+</html>
